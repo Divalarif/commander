@@ -4,7 +4,8 @@ import type { Context, Message } from "@mariozechner/pi-ai";
 import { resolveModel } from "./model.js";
 import { SpaceMoltAPI } from "./api.js";
 import { SessionManager } from "./session.js";
-import { allTools } from "./tools.js";
+import { localTools } from "./tools.js";
+import { fetchGameTools } from "./schema.js";
 import { runAgentTurn, type CompactionState } from "./loop.js";
 import { log, logError, setDebug } from "./ui.js";
 
@@ -195,6 +196,12 @@ async function main(): Promise<void> {
 
   // Load TODO
   const todo = sessionMgr.loadTodo();
+
+  // Fetch game tools from OpenAPI spec
+  log("setup", "Fetching game tools from server...");
+  const remoteTools = await fetchGameTools(api.baseUrl);
+  const allTools = [...localTools, ...remoteTools];
+  log("setup", `Tools loaded: ${remoteTools.length} remote + ${localTools.length} local = ${allTools.length} total`);
 
   // Build initial context
   const systemPrompt = buildSystemPrompt(promptMd, cliArgs.instruction, credentialsPrompt, todo);

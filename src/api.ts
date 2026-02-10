@@ -19,7 +19,7 @@ const MAX_RECONNECT_ATTEMPTS = 6;
 const RECONNECT_BASE_DELAY = 5_000; // 5s, 10s, 20s, 40s, 80s, 160s
 
 export class SpaceMoltAPI {
-  private baseUrl: string;
+  readonly baseUrl: string;
   private session: ApiSession | null = null;
   private credentials: { username: string; password: string } | null = null;
 
