@@ -15,6 +15,8 @@ export interface ApiResponse {
 }
 
 const DEFAULT_BASE_URL = "https://game.spacemolt.com/api/v1";
+const MAX_RECONNECT_ATTEMPTS = 6;
+const RECONNECT_BASE_DELAY = 5_000; // 5s, 10s, 20s, 40s, 80s, 160s
 
 export class SpaceMoltAPI {
   private baseUrl: string;
@@ -34,11 +36,28 @@ export class SpaceMoltAPI {
   }
 
   async execute(command: string, payload?: Record<string, unknown>): Promise<ApiResponse> {
-    await this.ensureSession();
+    try {
+      await this.ensureSession();
+    } catch {
+      return { error: { code: "connection_failed", message: "Could not connect to server" } };
+    }
 
-    const resp = await this.doRequest(command, payload);
+    let resp: ApiResponse;
+    try {
+      resp = await this.doRequest(command, payload);
+    } catch {
+      // Network error — server may have restarted mid-request
+      log("system", "Connection lost, reconnecting...");
+      this.session = null;
+      try {
+        await this.ensureSession();
+        resp = await this.doRequest(command, payload);
+      } catch {
+        return { error: { code: "connection_failed", message: "Could not reconnect to server" } };
+      }
+    }
 
-    // Handle session errors by refreshing and retrying
+    // Handle session/auth errors by refreshing and retrying
     if (resp.error) {
       const code = resp.error.code;
 
@@ -49,17 +68,10 @@ export class SpaceMoltAPI {
         return this.execute(command, payload);
       }
 
-      if (code === "session_invalid" || code === "session_expired") {
+      if (code === "session_invalid" || code === "session_expired" || code === "not_authenticated") {
         log("system", "Session expired, refreshing...");
         this.session = null;
         await this.ensureSession();
-        // Re-authenticate if we have credentials
-        if (this.credentials) {
-          await this.doRequest("login", {
-            username: this.credentials.username,
-            password: this.credentials.password,
-          });
-        }
         return this.doRequest(command, payload);
       }
     }
@@ -77,36 +89,49 @@ export class SpaceMoltAPI {
 
     log("system", this.session ? "Renewing session..." : "Creating new session...");
 
-    const resp = await fetch(`${this.baseUrl}/session`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
+    // Retry with backoff — server may be restarting
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt < MAX_RECONNECT_ATTEMPTS; attempt++) {
+      try {
+        const resp = await fetch(`${this.baseUrl}/session`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
 
-    if (!resp.ok) {
-      throw new Error(`Failed to create session: ${resp.status} ${resp.statusText}`);
-    }
+        if (!resp.ok) {
+          throw new Error(`Failed to create session: ${resp.status} ${resp.statusText}`);
+        }
 
-    const data = (await resp.json()) as ApiResponse;
-    if (data.session) {
-      this.session = data.session;
-      log("system", `Session created: ${this.session.id.slice(0, 8)}...`);
-    } else {
-      throw new Error("No session in response");
-    }
+        const data = (await resp.json()) as ApiResponse;
+        if (data.session) {
+          this.session = data.session;
+          log("system", `Session created: ${this.session.id.slice(0, 8)}...`);
+        } else {
+          throw new Error("No session in response");
+        }
 
-    // Re-authenticate if we have credentials
-    if (this.credentials) {
-      log("system", `Logging in as ${this.credentials.username}...`);
-      const loginResp = await this.doRequest("login", {
-        username: this.credentials.username,
-        password: this.credentials.password,
-      });
-      if (loginResp.error) {
-        logError(`Login failed: ${loginResp.error.message}`);
-      } else {
-        log("system", "Logged in successfully");
+        // Re-authenticate if we have credentials
+        if (this.credentials) {
+          log("system", `Logging in as ${this.credentials.username}...`);
+          const loginResp = await this.doRequest("login", {
+            username: this.credentials.username,
+            password: this.credentials.password,
+          });
+          if (loginResp.error) {
+            logError(`Login failed: ${loginResp.error.message}`);
+          } else {
+            log("system", "Logged in successfully");
+          }
+        }
+        return;
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        const delay = RECONNECT_BASE_DELAY * Math.pow(2, attempt);
+        log("system", `Server unreachable (attempt ${attempt + 1}/${MAX_RECONNECT_ATTEMPTS}), retrying in ${delay / 1000}s...`);
+        await sleep(delay);
       }
     }
+    throw lastError || new Error("Failed to connect to server");
   }
 
   private isSessionExpiring(): boolean {
@@ -130,6 +155,13 @@ export class SpaceMoltAPI {
       headers,
       body: payload ? JSON.stringify(payload) : undefined,
     });
+
+    // 401 = session gone (server restarted, etc.) — return as session error
+    if (resp.status === 401) {
+      return {
+        error: { code: "session_invalid", message: "Unauthorized — session lost" },
+      };
+    }
 
     if (!resp.ok && resp.status !== 400 && resp.status !== 429) {
       throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
