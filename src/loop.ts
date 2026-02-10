@@ -63,21 +63,22 @@ export async function runAgentTurn(
     // Extract tool calls and reasoning text
     const toolCalls = response.content.filter((c): c is ToolCall => c.type === "toolCall");
 
-    // Prefer explicit text blocks; fall back to last line of thinking blocks
+    // Prefer explicit text blocks; fall back to thinking blocks
     const textParts = response.content
       .filter((b: any) => b.type === "text" && b.text?.trim())
       .map((b: any) => b.text.trim());
     let reasoning = textParts.join(" ");
     if (!reasoning) {
-      // No text block — extract the last sentence from thinking as a short reason
+      // No text block — extract goal + action from thinking blocks
       const thinking = response.content
         .filter((b: any) => "thinking" in b && b.thinking?.trim())
         .map((b: any) => b.thinking.trim())
         .join(" ");
       if (thinking) {
-        // Grab the last sentence as the conclusion
+        // Grab the last few sentences for goal context + immediate action
         const sentences = thinking.split(/[.!?\n]/).filter((s: string) => s.trim().length > 10);
-        reasoning = sentences.length > 0 ? sentences[sentences.length - 1].trim() : "";
+        const lastFew = sentences.slice(-3).map((s: string) => s.trim());
+        reasoning = lastFew.join(". ");
       }
     }
 
@@ -87,9 +88,9 @@ export async function runAgentTurn(
       return;
     }
 
-    // Build a short reason from the LLM's text (first 120 chars)
+    // Build a short reason from the LLM's text (first 180 chars)
     const reason = reasoning
-      ? reasoning.length > 120 ? reasoning.slice(0, 117) + "..." : reasoning
+      ? reasoning.length > 180 ? reasoning.slice(0, 177) + "..." : reasoning
       : undefined;
 
     // Execute each tool call (show reason only on the first one)
