@@ -62,10 +62,24 @@ export async function runAgentTurn(
 
     // Extract tool calls and reasoning text
     const toolCalls = response.content.filter((c): c is ToolCall => c.type === "toolCall");
-    const reasoning = response.content
-      .filter((b): b is { type: "text"; text: string } => b.type === "text" && !!b.text?.trim())
-      .map((b) => b.text.trim())
-      .join(" ");
+
+    // Prefer explicit text blocks; fall back to last line of thinking blocks
+    const textParts = response.content
+      .filter((b: any) => b.type === "text" && b.text?.trim())
+      .map((b: any) => b.text.trim());
+    let reasoning = textParts.join(" ");
+    if (!reasoning) {
+      // No text block — extract the last sentence from thinking as a short reason
+      const thinking = response.content
+        .filter((b: any) => "thinking" in b && b.thinking?.trim())
+        .map((b: any) => b.thinking.trim())
+        .join(" ");
+      if (thinking) {
+        // Grab the last sentence as the conclusion
+        const sentences = thinking.split(/[.!?\n]/).filter((s: string) => s.trim().length > 10);
+        reasoning = sentences.length > 0 ? sentences[sentences.length - 1].trim() : "";
+      }
+    }
 
     // If no tool calls, log the text and end the turn
     if (toolCalls.length === 0) {
