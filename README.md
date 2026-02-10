@@ -216,25 +216,23 @@ sequenceDiagram
     participant Tools as tools.ts
     participant API as api.ts
 
-    loop Up to 30 rounds
-        Loop->>Loop: compactContext() if over token budget
-        Loop->>LLM: completeWithRetry(model, context)
-        LLM-->>Loop: AssistantMessage (text + tool calls)
-        alt No tool calls
-            Loop-->>Loop: Turn complete, return
+    Loop->>Loop: compactContext() if over token budget
+    Loop->>LLM: completeWithRetry(model, context)
+    LLM-->>Loop: AssistantMessage (text + tool calls)
+
+    alt No tool calls
+        Loop-->>Loop: Turn complete, return
+    else Has tool calls
+        Loop->>Tools: executeTool(name, args)
+        alt Local tool (save_credentials, update_todo, etc.)
+            Tools-->>Loop: result string
+        else Remote tool (mine, travel, attack, etc.)
+            Tools->>API: api.execute(command, payload)
+            API-->>Tools: ApiResponse
+            Tools-->>Loop: result string (truncated to 4000 chars)
         end
-        loop For each tool call
-            alt Local tool (save_credentials, update_todo, etc.)
-                Loop->>Tools: executeTool(name, args)
-                Tools-->>Loop: result string
-            else Remote tool (mine, travel, attack, etc.)
-                Loop->>Tools: executeTool(name, args)
-                Tools->>API: api.execute(command, payload)
-                API-->>Tools: ApiResponse
-                Tools-->>Loop: result string (truncated to 4000 chars)
-            end
-            Loop->>Loop: Push toolResult to context
-        end
+        Loop->>Loop: Push toolResult to context
+        Loop->>Loop: Next round (up to 30)
     end
 ```
 
@@ -274,24 +272,26 @@ sequenceDiagram
     participant Server as game.spacemolt.com
 
     Tools->>API: execute("mine", {})
-    API->>API: ensureSession()
-    alt No session or expiring
+
+    rect rgb(240, 240, 255)
+        Note over API,Server: Session Management
         API->>Server: POST /api/v1/session
-        Server-->>API: { session: { id, expiresAt } }
-        alt Has saved credentials
-            API->>Server: POST /api/v1/login
-            Server-->>API: Logged in
-        end
+        Server-->>API: session { id, expiresAt }
+        API->>Server: POST /api/v1/login (if credentials saved)
+        Server-->>API: Logged in
     end
+
     API->>Server: POST /api/v1/mine (X-Session-Id header)
+
     alt rate_limited
-        Server-->>API: { error: "rate_limited", wait_seconds: 8 }
+        Server-->>API: { error: rate_limited, wait_seconds: 8 }
         API->>API: sleep(8s), retry
     else session_expired
         API->>API: Re-create session, re-login, retry
     else Success
         Server-->>API: { result: { mined: [...] } }
     end
+
     API-->>Tools: ApiResponse
 ```
 
