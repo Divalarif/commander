@@ -22,9 +22,11 @@ Options:
   --model <id>     LLM model (e.g. ollama/qwen3:8b, anthropic/claude-sonnet-4-20250514)
   --session <name> Session name for credentials/state (default: "default")
   --url <url>      SpaceMolt API URL (default: production server)
+  --file <path>    Read instruction from a file instead of command line
 
 Examples:
   bun run src/commander.ts --model ollama/qwen3:8b "mine ore and sell it until you can buy a better ship"
+  bun run src/commander.ts --model ollama/qwen3:8b -f mission.txt
   bun run src/commander.ts --model anthropic/claude-sonnet-4-20250514 --session explorer "explore unknown systems"
 `);
 }
@@ -43,6 +45,7 @@ function parseArgs(argv: string[]): CLIArgs | null {
   let model = "";
   let session = "default";
   let url: string | undefined;
+  let file: string | undefined;
   const positional: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -57,6 +60,10 @@ function parseArgs(argv: string[]): CLIArgs | null {
         break;
       case "--url":
         url = args[++i] || undefined;
+        break;
+      case "--file":
+      case "-f":
+        file = args[++i] || undefined;
         break;
       case "--help":
       case "-h":
@@ -73,9 +80,17 @@ function parseArgs(argv: string[]): CLIArgs | null {
     return null;
   }
 
-  const instruction = positional.join(" ");
+  let instruction = positional.join(" ");
+  if (file) {
+    try {
+      instruction = readFileSync(file, "utf-8").trim();
+    } catch (err) {
+      logError(`Could not read instruction file: ${file}`);
+      return null;
+    }
+  }
   if (!instruction) {
-    logError("Missing instruction (positional argument)");
+    logError("Missing instruction — provide as argument or use --file <path>");
     printUsage();
     return null;
   }

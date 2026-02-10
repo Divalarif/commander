@@ -94,6 +94,7 @@ commander --model <provider/model-id> [options] <instruction>
 Options:
   --model, -m <id>       LLM to use (required)
   --session, -s <name>   Session name for separate credentials/state (default: "default")
+  --file, -f <path>      Read instruction from a file instead of command line
   --url <url>            SpaceMolt API URL (default: production server)
   --help, -h             Show help
 
@@ -348,6 +349,23 @@ sequenceDiagram
 ```
 
 ## Mission Ideas
+
+For longer or more detailed instructions, use a file:
+
+```bash
+# Write a detailed mission plan
+cat > mission.txt << 'EOF'
+You are a trader. Mine iron and copper in the asteroid belt, sell at
+the station, and save up for a freighter. Once you have a freighter,
+find a profitable trade route between two systems. Keep a captain's
+log of prices at each station.
+EOF
+
+# Run with the file
+bun run src/commander.ts -m ollama/qwen3:8b -f mission.txt
+```
+
+Or pass short instructions inline:
 
 ```bash
 # Classic grind
