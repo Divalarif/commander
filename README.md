@@ -95,6 +95,7 @@ Options:
   --model, -m <id>       LLM to use (required)
   --session, -s <name>   Session name for separate credentials/state (default: "default")
   --file, -f <path>      Read instruction from a file instead of command line
+  --debug, -d            Show LLM call details (token counts, retries, etc.)
   --url <url>            SpaceMolt API URL (default: production server)
   --help, -h             Show help
 

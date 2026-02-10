@@ -6,7 +6,7 @@ import { SpaceMoltAPI } from "./api.js";
 import { SessionManager } from "./session.js";
 import { allTools } from "./tools.js";
 import { runAgentTurn, type CompactionState } from "./loop.js";
-import { log, logError } from "./ui.js";
+import { log, logError, setDebug } from "./ui.js";
 
 const PROJECT_ROOT = dirname(dirname(Bun.main));
 const TURN_INTERVAL = 2000; // ms between turns
@@ -23,6 +23,7 @@ Options:
   --session <name> Session name for credentials/state (default: "default")
   --url <url>      SpaceMolt API URL (default: production server)
   --file <path>    Read instruction from a file instead of command line
+  --debug          Show LLM call details (token counts, retries, etc.)
 
 Examples:
   bun run src/commander.ts --model ollama/qwen3:8b "mine ore and sell it until you can buy a better ship"
@@ -37,6 +38,7 @@ interface CLIArgs {
   model: string;
   session: string;
   url?: string;
+  debug: boolean;
   instruction: string;
 }
 
@@ -46,6 +48,7 @@ function parseArgs(argv: string[]): CLIArgs | null {
   let session = "default";
   let url: string | undefined;
   let file: string | undefined;
+  let debug = false;
   const positional: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -64,6 +67,10 @@ function parseArgs(argv: string[]): CLIArgs | null {
       case "--file":
       case "-f":
         file = args[++i] || undefined;
+        break;
+      case "--debug":
+      case "-d":
+        debug = true;
         break;
       case "--help":
       case "-h":
@@ -95,7 +102,7 @@ function parseArgs(argv: string[]): CLIArgs | null {
     return null;
   }
 
-  return { model, session, url, instruction };
+  return { model, session, url, debug, instruction };
 }
 
 // ─── System Prompt Builder ───────────────────────────────────
@@ -141,6 +148,8 @@ ${todo || "(empty)"}
 async function main(): Promise<void> {
   const cliArgs = parseArgs(process.argv);
   if (!cliArgs) process.exit(1);
+
+  if (cliArgs.debug) setDebug(true);
 
   log("setup", `SpaceMolt AI Commander starting...`);
   log("setup", `Model: ${cliArgs.model}`);

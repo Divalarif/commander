@@ -20,10 +20,21 @@ const RESET = "\x1b[0m";
 const BOLD = "\x1b[1m";
 const DIM = "\x1b[2m";
 
+let debugEnabled = false;
+
+export function setDebug(enabled: boolean): void {
+  debugEnabled = enabled;
+}
+
 export function log(category: string, message: string): void {
   const color = COLORS[category] || COLORS.info;
   const timestamp = new Date().toLocaleTimeString("en-US", { hour12: false });
   console.log(`${DIM}${timestamp}${RESET} ${color}[${category}]${RESET} ${message}`);
+}
+
+export function logDebug(message: string): void {
+  if (!debugEnabled) return;
+  log("system", message);
 }
 
 export function logError(message: string): void {
