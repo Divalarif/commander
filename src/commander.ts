@@ -228,7 +228,7 @@ async function main(): Promise<void> {
       `- Empire: ${creds.empire}`,
       `- Player ID: ${creds.playerId}`,
       "",
-      "You are already registered. Call the login tool with the username and password above. Do NOT ask for the password — you have it right here.",
+      "You are already logged in. Do NOT call the login tool — the session is already active. Start playing immediately.",
     ].join("\n");
   } else {
     log("setup", "No credentials found — agent will need to register");
