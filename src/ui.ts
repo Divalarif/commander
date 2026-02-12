@@ -34,9 +34,90 @@ export function log(category: string, message: string): void {
   console.log(`${DIM}${timestamp}${RESET} ${color}[${category}]${RESET} ${message}`);
 }
 
+export function isDebug(): boolean {
+  return debugEnabled;
+}
+
 export function logDebug(message: string): void {
   if (!debugEnabled) return;
   log("system", message);
+}
+
+const DEBUG_SEP = "━".repeat(80);
+const DEBUG_COLOR = "\x1b[93m"; // bright yellow
+
+export function logLLMInput(systemPrompt: string | undefined, messages: Array<{ role: string; content: unknown }>): void {
+  if (!debugEnabled) return;
+  console.log(`\n${DEBUG_COLOR}${DEBUG_SEP}${RESET}`);
+  console.log(`${DEBUG_COLOR}${BOLD}  ▶ LLM INPUT${RESET}`);
+  console.log(`${DEBUG_COLOR}${DEBUG_SEP}${RESET}`);
+
+  // System prompt (truncate to first/last 500 chars if huge)
+  const sp = systemPrompt || "(none)";
+  console.log(`\n${BOLD}[SYSTEM PROMPT]${RESET} ${DIM}(${sp.length} chars)${RESET}`);
+  if (sp.length > 1500) {
+    console.log(sp.slice(0, 750));
+    console.log(`${DIM}... (${sp.length - 1500} chars omitted) ...${RESET}`);
+    console.log(sp.slice(-750));
+  } else {
+    console.log(sp);
+  }
+
+  // Messages
+  console.log(`\n${BOLD}[MESSAGES]${RESET} ${DIM}(${messages.length} messages)${RESET}`);
+  for (const msg of messages) {
+    const role = msg.role.toUpperCase();
+    if (typeof msg.content === "string") {
+      const content = msg.content.length > 2000
+        ? msg.content.slice(0, 1000) + `\n${DIM}... (${msg.content.length - 2000} chars omitted) ...${RESET}\n` + msg.content.slice(-1000)
+        : msg.content;
+      console.log(`\n  ${BOLD}[${role}]${RESET}\n${content}`);
+    } else if (Array.isArray(msg.content)) {
+      console.log(`\n  ${BOLD}[${role}]${RESET}`);
+      for (const block of msg.content) {
+        if ("text" in block && (block as any).text) {
+          const text = (block as any).text;
+          const truncated = text.length > 1000
+            ? text.slice(0, 500) + `\n${DIM}... (${text.length - 1000} chars omitted) ...${RESET}\n` + text.slice(-500)
+            : text;
+          console.log(`    [text] ${truncated}`);
+        } else if ("name" in block) {
+          console.log(`    [toolCall] ${(block as any).name}(${JSON.stringify((block as any).arguments)})`);
+        } else if ("thinking" in block && (block as any).thinking) {
+          const thinking = (block as any).thinking;
+          const truncated = thinking.length > 500
+            ? thinking.slice(0, 250) + `\n${DIM}... (${thinking.length - 500} chars omitted) ...${RESET}\n` + thinking.slice(-250)
+            : thinking;
+          console.log(`    [thinking] ${truncated}`);
+        }
+      }
+    }
+  }
+  console.log(`\n${DEBUG_COLOR}${DEBUG_SEP}${RESET}\n`);
+}
+
+export function logLLMOutput(response: { content: Array<any>; stopReason?: string; usage?: any }): void {
+  if (!debugEnabled) return;
+  console.log(`\n${DEBUG_COLOR}${DEBUG_SEP}${RESET}`);
+  console.log(`${DEBUG_COLOR}${BOLD}  ◀ LLM OUTPUT${RESET}  ${DIM}stop=${response.stopReason || "?"} tokens=${response.usage?.totalTokens ?? "?"}${RESET}`);
+  console.log(`${DEBUG_COLOR}${DEBUG_SEP}${RESET}`);
+
+  for (const block of response.content) {
+    if ("text" in block && block.text) {
+      console.log(`\n  ${BOLD}[text]${RESET}\n${block.text}`);
+    } else if ("name" in block) {
+      const argsStr = JSON.stringify(block.arguments, null, 2);
+      console.log(`\n  ${BOLD}[toolCall]${RESET} ${block.name}`);
+      console.log(`  ${DIM}args:${RESET} ${argsStr}`);
+    } else if ("thinking" in block && block.thinking) {
+      const thinking = block.thinking;
+      const truncated = thinking.length > 1000
+        ? thinking.slice(0, 500) + `\n${DIM}... (${thinking.length - 1000} chars omitted) ...${RESET}\n` + thinking.slice(-500)
+        : thinking;
+      console.log(`\n  ${BOLD}[thinking]${RESET}\n${truncated}`);
+    }
+  }
+  console.log(`\n${DEBUG_COLOR}${DEBUG_SEP}${RESET}\n`);
 }
 
 export function logError(message: string): void {
