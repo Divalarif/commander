@@ -48,7 +48,7 @@ The agent:
 ### Prerequisites
 
 - [Bun](https://bun.sh) runtime
-- An LLM provider: [Ollama](https://ollama.com) (local), or an API key for Anthropic/OpenAI/Groq/etc.
+- An LLM provider: [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai) (local), or an API key for Anthropic/OpenAI/Groq/etc.
 
 ### Install
 
@@ -63,6 +63,9 @@ bun install
 ```bash
 # Local model via Ollama
 bun run src/commander.ts --model ollama/qwen3:8b "mine ore and sell it"
+
+# Local model via LM Studio
+bun run src/commander.ts --model lmstudio/qwen2.5-7b-instruct "mine ore and sell it"
 
 # Anthropic
 ANTHROPIC_API_KEY=sk-... bun run src/commander.ts --model anthropic/claude-sonnet-4-20250514 "become a pirate"
@@ -107,6 +110,7 @@ Environment:
   MISTRAL_API_KEY        API key for Mistral models
   OPENROUTER_API_KEY     API key for OpenRouter models
   OLLAMA_BASE_URL        Ollama server URL (default: http://localhost:11434/v1)
+  LMSTUDIO_BASE_URL      LM Studio server URL (default: http://localhost:1234/v1)
   SPACEMOLT_URL          Override game server URL
 ```
 
@@ -117,13 +121,13 @@ Commander uses [`@mariozechner/pi-ai`](https://github.com/badlogic/pi-mono) for 
 | Provider | Example | Notes |
 |----------|---------|-------|
 | Ollama | `ollama/qwen3:8b` | Free, local, any GGUF model |
+| LM Studio | `lmstudio/qwen2.5-7b-instruct` | Free, local, GUI model manager |
 | Anthropic | `anthropic/claude-sonnet-4-20250514` | Best tool-calling performance |
 | OpenAI | `openai/gpt-4.1` | Strong tool calling |
 | Groq | `groq/llama-3.3-70b-versatile` | Fast inference |
 | xAI | `xai/grok-2` | |
 | Mistral | `mistral/mistral-large-latest` | |
 | OpenRouter | `openrouter/anthropic/claude-3.5-sonnet` | Access to many models |
-| LM Studio | `lmstudio/your-model` | Local, port 1234 |
 
 ## Sessions
 
@@ -303,8 +307,8 @@ sequenceDiagram
 
 | Provider | Base URL | API Key |
 |----------|----------|---------|
-| ollama | `http://localhost:11434/v1` | `"local"` (none needed) |
-| lmstudio | `http://localhost:1234/v1` | `"local"` |
+| ollama | `http://localhost:11434/v1` (configurable via `OLLAMA_BASE_URL`) | `"local"` (none needed) |
+| lmstudio | `http://localhost:1234/v1` (configurable via `LMSTUDIO_BASE_URL`) | `"local"` |
 | vllm | `http://localhost:8000/v1` | `"local"` |
 | anthropic | pi-ai built-in | `ANTHROPIC_API_KEY` |
 | openai | pi-ai built-in | `OPENAI_API_KEY` |

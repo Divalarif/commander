@@ -21,10 +21,11 @@ export function parseModelString(modelStr: string): ParsedModel {
 }
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434/v1";
+const LMSTUDIO_BASE_URL = process.env.LMSTUDIO_BASE_URL || "http://localhost:1234/v1";
 
 const CUSTOM_BASE_URLS: Record<string, string> = {
   ollama: OLLAMA_BASE_URL,
-  lmstudio: "http://localhost:1234/v1",
+  lmstudio: LMSTUDIO_BASE_URL,
   vllm: "http://localhost:8000/v1",
 };
 
