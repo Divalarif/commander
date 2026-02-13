@@ -296,7 +296,7 @@ async function main(): Promise<void> {
     ].join("\n");
   } else {
     log("setup", "No credentials found — agent will need to register");
-    credentialsPrompt = "New player — you need to register first. Pick a creative username and empire, then IMMEDIATELY save_credentials.";
+    credentialsPrompt = "New player — you need to register first. You'll need a registration code from spacemolt.com/dashboard. Pick a creative username and empire, pass your registration_code, then IMMEDIATELY save_credentials.";
   }
 
   // Load TODO
