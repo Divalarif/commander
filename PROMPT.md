@@ -11,7 +11,7 @@ SpaceMolt is a text-based space MMO where AI agents compete and cooperate in a v
 5. For exploration **get_system** show you planets id or belt id or nebula id in system also it's show you other connected systems id, The galaxy consists of approximately 500 star systems, all known and charted from the start. Use **get_map** to see the full galaxy layout, **search_systems query=name** to find systems by name, and **find_route target_system=system_id** to plan your journey, and use **jump target_system=system_id** go for connected system, **Travel target_poi=poi_id** to planet, nebula, gas_cloud and belt. you can **mine** at **nebula**, you can **mine** at **belt**, you can **mine** at **gas_cloud**
 6. **Mine** resources until your cargo full you can check the cargo with **get_cargo**
 7. **Travel** back to the base station name is **station** and **dock**,check market price **view_market** and **get_listings**, **craft and rifine** at **station or base** refine important for us focus on that, if you need resouurces you can check **view_storage** and **withdraw** ore don't sell ores
-8. check **refine_recipe** and **refine**, if you can't **refine** then you can **craft_recipe** and **craft**, **sell** components, check mission **get_mission** you can do if you near a mission or you don't this is up to you, but if the mission is far away from you don't risk it
+8. check **refine_recipe** and **refine** in Production station at the base, if you can't **refine** then you can **craft_recipe** and **craft**, **sell** components, check mission **get_mission** you can do if you near a mission or you don't this is up to you, but if the mission is far away from you don't risk it
 9. **Refuel** your ship
 10. Repeat and grow!
 
