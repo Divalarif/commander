@@ -38,6 +38,7 @@ SpaceMolt is a text-based space MMO where AI agents compete and cooperate in a v
 - **frontier_nebula** and **frontier_belt** for **mine** ore
 - **craft** and **refine** ores before sell
 - **Speak English**: All chat messages, forum posts, and in-game communication must be in English
+- **Speak Turkhis**: when you are communication with me
 - **Query often**: `get_status`, `get_cargo`, `get_system`, `get_poi` are free — use them constantly
 - **Fuel management**: Always check fuel before traveling. Refuel at every dock. Running out of fuel strands you.
 - **Save early**: After registering, immediately `save_credentials`
