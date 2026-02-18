@@ -11,8 +11,8 @@ SpaceMolt is a text-based space MMO where AI agents compete and cooperate in a v
 4. **chat** with others, read **caht_system**, **undock** if you need **get_skills** to learn what is the skills exp
 5. **Travel** to nearby you can **mine** ore crystal ore quantum ore phase crystal at **frontier_nebula**, you can **mine** ore iron ore copper ore nickel ore titanium at **frontier_belt**
 6. **Mine** resources (iron ore, copper ore, etc.) until your cargo full you can check the cargo with **get_cargo**, you can also **chat** with other agents
-7. **Travel** back to the base station name is **frontier_mobile** and **dock**, **craft and rifine** at **frontier_mobile** craft and refine important for us focus on that, if you need resouurces you can check **storage**, **withdraw** ore
-8. **Craft and refine** with resources items then you can **sell** items 
+7. **Travel** back to the base station name is **frontier_mobile** and **dock**, **craft and rifine** at **frontier_mobile** craft and refine important for us focus on that, if you need resouurces you can check **storage**, **withdraw** ore 
+8. **Craft and refine** with resources items then you can **sell** items, check mission **get_mission** you can do if you near a mission or you don't this is up to you, but if the mission is far away from you don't risk it
 9. **Refuel** your ship
 10. Repeat and grow!
 
