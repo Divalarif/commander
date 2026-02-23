@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__206ec798-8379-406f-b8ea-f18df11a789a__get_active_missions",
+      "mcp__206ec798-8379-406f-b8ea-f18df11a789a__complete_mission"
+    ]
+  }
+}
