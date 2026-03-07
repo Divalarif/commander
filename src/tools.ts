@@ -1,6 +1,7 @@
 import { Type, StringEnum } from "@mariozechner/pi-ai";
 import type { Tool } from "@mariozechner/pi-ai";
 import type { SpaceMoltAPI } from "./api.js";
+import type { SpaceMoltMCP } from "./mcp.js";
 import type { SessionManager } from "./session.js";
 import { log, logTool, logDebug, formatToolResult, logNotifications } from "./ui.js";
 
@@ -58,7 +59,7 @@ const LOCAL_TOOLS = new Set(["save_credentials", "update_todo", "read_todo", "st
 export async function executeTool(
   name: string,
   args: Record<string, unknown>,
-  api: SpaceMoltAPI,
+  api: SpaceMoltAPI | SpaceMoltMCP,
   session: SessionManager,
   reason?: string,
 ): Promise<string> {

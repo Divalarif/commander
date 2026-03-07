@@ -3,9 +3,10 @@ import { join, dirname } from "path";
 import type { Context, Message } from "@mariozechner/pi-ai";
 import { resolveModel } from "./model.js";
 import { SpaceMoltAPI } from "./api.js";
+import { SpaceMoltMCP } from "./mcp.js";
 import { SessionManager } from "./session.js";
 import { allTools } from "./tools.js";
-import { fetchGameCommands, formatCommandList } from "./schema.js";
+import { fetchGameCommands, fetchGameCommandsFromMCP, formatCommandList } from "./schema.js";
 import { runAgentTurn, generateSessionHandoff, type CompactionState } from "./loop.js";
 import { log, logError, setDebug, logNotifications, formatNotifications } from "./ui.js";
 
@@ -23,6 +24,8 @@ Options:
   --model <id>     LLM model (e.g. ollama/qwen3:8b, anthropic/claude-sonnet-4-20250514)
   --session <name> Session name for credentials/state (default: "default")
   --url <url>      SpaceMolt API URL (default: production server)
+  --mcp            Use MCP transport instead of REST API
+  --mcp-url <url>  MCP endpoint URL (default: https://game.spacemolt.com/mcp)
   --file <path>    Read instruction from a file instead of command line
   --debug          Show LLM call details (token counts, retries, etc.)
 
@@ -30,6 +33,7 @@ Examples:
   bun run src/commander.ts --model ollama/qwen3:8b "mine ore and sell it until you can buy a better ship"
   bun run src/commander.ts --model ollama/qwen3:8b -f mission.txt
   bun run src/commander.ts --model anthropic/claude-sonnet-4-20250514 --session explorer "explore unknown systems"
+  bun run src/commander.ts --model anthropic/claude-sonnet-4-20250514 --mcp "mine ore and sell it"
 `);
 }
 
@@ -39,6 +43,8 @@ interface CLIArgs {
   model: string;
   session: string;
   url?: string;
+  useMCP: boolean;
+  mcpUrl?: string;
   debug: boolean;
   instruction: string;
 }
@@ -48,6 +54,8 @@ function parseArgs(argv: string[]): CLIArgs | null {
   let model = "";
   let session = "default";
   let url: string | undefined;
+  let useMCP = false;
+  let mcpUrl: string | undefined;
   let file: string | undefined;
   let debug = false;
   const positional: string[] = [];
@@ -64,6 +72,13 @@ function parseArgs(argv: string[]): CLIArgs | null {
         break;
       case "--url":
         url = args[++i] || undefined;
+        break;
+      case "--mcp":
+        useMCP = true;
+        break;
+      case "--mcp-url":
+        mcpUrl = args[++i] || undefined;
+        useMCP = true;
         break;
       case "--file":
       case "-f":
@@ -103,7 +118,7 @@ function parseArgs(argv: string[]): CLIArgs | null {
     return null;
   }
 
-  return { model, session, url, debug, instruction };
+  return { model, session, url, useMCP, mcpUrl, debug, instruction };
 }
 
 // ─── System Prompt Builder ───────────────────────────────────
@@ -208,7 +223,7 @@ function formatStatusMarkdown(result: Record<string, unknown>): string {
   return lines.join("\n");
 }
 
-async function fetchInitialServerInfo(api: SpaceMoltAPI): Promise<string> {
+async function fetchInitialServerInfo(api: SpaceMoltAPI | SpaceMoltMCP): Promise<string> {
   const parts: string[] = [];
 
   // Fetch status (triggers session creation + auto-login)
@@ -260,6 +275,7 @@ async function main(): Promise<void> {
   log("setup", `SpaceMolt AI Commander starting...`);
   log("setup", `Model: ${cliArgs.model}`);
   log("setup", `Session: ${cliArgs.session}`);
+  log("setup", `Transport: ${cliArgs.useMCP ? "MCP" : "REST"}`);
   log("setup", `Instruction: ${cliArgs.instruction}`);
 
   // Load PROMPT.md
@@ -277,8 +293,10 @@ async function main(): Promise<void> {
   // Create session manager
   const sessionMgr = new SessionManager(cliArgs.session, PROJECT_ROOT);
 
-  // Create API client
-  const api = new SpaceMoltAPI(cliArgs.url);
+  // Create API client (REST or MCP)
+  const api: SpaceMoltAPI | SpaceMoltMCP = cliArgs.useMCP
+    ? new SpaceMoltMCP(cliArgs.mcpUrl)
+    : new SpaceMoltAPI(cliArgs.url);
 
   // Load credentials if they exist
   const creds = sessionMgr.loadCredentials();
@@ -302,9 +320,11 @@ async function main(): Promise<void> {
   // Load TODO
   const todo = sessionMgr.loadTodo();
 
-  // Fetch game command list from OpenAPI spec
+  // Fetch game command list (MCP tools/list or OpenAPI spec)
   log("setup", "Fetching game commands from server...");
-  const gameCommands = await fetchGameCommands(api.baseUrl);
+  const gameCommands = cliArgs.useMCP
+    ? await fetchGameCommandsFromMCP(api as SpaceMoltMCP)
+    : await fetchGameCommands((api as SpaceMoltAPI).baseUrl);
   const commandList = formatCommandList(gameCommands);
   log("setup", `${gameCommands.length} game commands loaded (${allTools.length} tools: game + ${allTools.length - 1} local)`);
 

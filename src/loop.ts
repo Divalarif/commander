@@ -1,6 +1,7 @@
 import { complete } from "@mariozechner/pi-ai";
 import type { Model, Context, AssistantMessage, ToolCall, Message } from "@mariozechner/pi-ai";
 import type { SpaceMoltAPI } from "./api.js";
+import type { SpaceMoltMCP } from "./mcp.js";
 import type { SessionManager } from "./session.js";
 import { executeTool } from "./tools.js";
 import { log, logAgent, logDebug, logError, logLLMInput, logLLMOutput, logLLMPayload, logToolResultDebug, isDebug } from "./ui.js";
@@ -32,7 +33,7 @@ export interface CompactionState {
 export async function runAgentTurn(
   model: Model<any>,
   context: Context,
-  api: SpaceMoltAPI,
+  api: SpaceMoltAPI | SpaceMoltMCP,
   session: SessionManager,
   options?: LoopOptions,
   compaction?: CompactionState,

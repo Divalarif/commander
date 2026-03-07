@@ -1,4 +1,5 @@
 import { log, logError } from "./ui.js";
+import type { SpaceMoltMCP } from "./mcp.js";
 
 export interface GameCommandInfo {
   name: string;
@@ -48,6 +49,39 @@ export async function fetchGameCommands(baseUrl: string): Promise<GameCommandInf
 
   log("system", `Loaded ${commands.length} game commands from OpenAPI spec`);
   return commands;
+}
+
+/**
+ * Fetch game commands from the MCP server's tools/list endpoint.
+ * Mutations are identified by the `x-mutation` annotation in the tool
+ * description (falling back to a keyword heuristic).
+ */
+export async function fetchGameCommandsFromMCP(mcpClient: SpaceMoltMCP): Promise<GameCommandInfo[]> {
+  try {
+    const tools = await mcpClient.listTools();
+    const commands: GameCommandInfo[] = [];
+
+    // Internal MCP tools that shouldn't be exposed as game commands
+    const skip = new Set(["login", "register", "logout", "help", "get_commands"]);
+
+    for (const tool of tools) {
+      if (!tool.name) continue;
+      if (skip.has(tool.name)) continue;
+
+      const description = tool.description || tool.name;
+      // Heuristic: commands that modify state are mutations
+      const mutationKeywords = /^(mine|travel|jump|dock|undock|sell|buy|craft|refuel|repair|attack|chat|forum|faction|deposit|withdraw|jettison|install|uninstall|create|delete|set|send|trade|claim|accept|decline|abandon|complete|commission|cancel|logout|reload|cloak|battle|tow|release|salvage|scrap|loot|survey|use_item|transfer|inspect|post|supply)/i;
+      const isMutation = mutationKeywords.test(tool.name);
+
+      commands.push({ name: tool.name, description: description.slice(0, 120), isMutation });
+    }
+
+    log("system", `Loaded ${commands.length} game commands from MCP tools/list`);
+    return commands;
+  } catch (err) {
+    logError(`Failed to fetch commands from MCP: ${err instanceof Error ? err.message : err}`);
+    return [];
+  }
 }
 
 /**
