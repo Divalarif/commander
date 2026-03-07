@@ -1,0 +1,19 @@
+Supply missing materials for the Caravan ship commission (ID: 0057cc009b19620fc941102afce614e1) at Gold Run Extraction Hub (base_id: gold_run_extraction_hub).
+
+CURRENT SITUATION:
+- Commission status: sourcing
+- Already gathered: cargo_container x17, flex_polymer x45, hull_plating x5, life_support_unit x5, processing_core x2, titanium_alloy x40
+- MISSING (must acquire):
+  - fuel_tank: 17 units (available at Confederacy Central Command for ~402-412 cr each)
+  - sensor_array: 10 units (available at Confederacy Central Command for ~14,361 cr each)
+
+MISSION PLAN:
+1. You are currently docked at Confederacy Central Command (sol system)
+2. Buy fuel_tank x17 from the market here (cheapest available lots first)
+3. Buy sensor_array x10 from the market here
+4. Travel to the Gold Run Extraction Hub system — use find_route to locate it, then jump there
+5. Dock at Gold Run Extraction Hub
+6. Use supply_commission to deliver the materials to commission 0057cc009b19620fc941102afce614e1
+7. Confirm the commission now shows materials_provided: true
+
+Be efficient. Use buy command with item_id and quantity. Check cargo after buying to confirm. Do NOT craft — buy from market directly.
